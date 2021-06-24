@@ -1,0 +1,423 @@
+---
+title: "ibbSehirTiyatrolari"
+output: html_document
+---
+
+```{r }
+library(dplyr) 
+library(ggplot2)
+```
+
+<h1>Description of Data </h1>
+There is data on the theater plays that have been staged since September 2017. Within this data source, there is information about the theater plays, stage information, type of play, stage location and number of spectators of the City Theatres.
+
+
+<html>
+<head>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
+</head>
+<body>
+
+<h2>Dataset Information</h2>
+<table>
+  <tr>
+    <th>Column</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>PLAY_DATE</td>
+    <td>t is the field containing the date that the activity will take place.  Data format is in YYYY-MM-DD format.</td>
+
+  </tr>
+  <tr>
+    <td>PLAY_NAME</td>
+    <td> It is the area where the names of the activities such as plays and musicals are displayed.</td>
+  </tr>
+  
+  <tr>
+    <td>THEATER_NAME</td>
+    <td>It is the area where the names of the activities such as plays and musicals are displayed.</td>
+  </tr>
+  <tr>
+    <td>PLAY_CATEGORY</td>
+    <td> It contains the information in which category the game will be staged.</td>
+  </tr>
+  <tr>
+    <td>IS_GUEST_PLAY</td>
+    <td>The theater group that played the staged play contains the information whether it is from the City Theaters or the Guest. * Guest = 1 If not Guest = 0.</td>
+  </tr>
+  
+  <tr>
+    <td>LONGITUDE</td>
+    <td>It contains the longitude information of the stage.</td>
+  </tr>
+   <tr>
+    <td>LATITUDE</td>
+    <td> It contains the latitude information of the stage.</td>
+
+  </tr>
+   <tr>
+    <td>NUMBER_OF_AUDIENCE</td>
+    <td>Indicates the number of spectators who came to the play staged.</td>
+
+  </tr>
+</table>
+
+<b>License: Istanbul Metropolitan Municipality Open Data License </b>
+<br>
+<hr>
+
+
+
+
+```{r}
+sehir.tiyatrolari <- read.csv("sehirTiyatrolari.csv")
+head(sehir.tiyatrolari)
+
+```
+
+
+```{r}
+
+sehir.tiyatrolari$PLAY_DATE <- as.numeric(substring(sehir.tiyatrolari$PLAY_DATE,0,4))
+
+```
+
+
+```{r}
+
+year2017 <- sehir.tiyatrolari%>%filter(PLAY_DATE==2017)
+year2018 <- sehir.tiyatrolari%>%filter(PLAY_DATE==2018)
+year2019 <- sehir.tiyatrolari%>%filter(PLAY_DATE==2019)
+year2020 <- sehir.tiyatrolari%>%filter(PLAY_DATE==2020)
+
+
+mean(year2017$NUMBER_OF_AUDIENCE)
+mean(year2018$NUMBER_OF_AUDIENCE)
+mean(year2019$NUMBER_OF_AUDIENCE)
+mean(year2020$NUMBER_OF_AUDIENCE)
+
+
+
+```
+
+
+```{r}
+summary(sehir.tiyatrolari$NUMBER_OF_AUDIENCE)
+```
+
+
+```{r}
+counts <- table(sehir.tiyatrolari$PLAY_DATE)
+
+head(counts)
+```
+
+```{r}
+barplot(counts, main="  Audience and Years")
+```
+
+
+
+```{r}
+
+
+ggplot(sehir.tiyatrolari,aes(x=	
+PLAY_CATEGORY,y=NUMBER_OF_AUDIENCE))+geom_point()+labs(title = "The relationship between Carat and Price")
+
+```
+
+
+
+
+```{r}
+play.based.on.category <- aggregate(NUMBER_OF_AUDIENCE~PLAY_CATEGORY,sehir.tiyatrolari,sum)
+
+ggplot(play.based.on.category, aes(x="", y=NUMBER_OF_AUDIENCE, fill=PLAY_CATEGORY)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  
+  theme_void() # remove background, grid, numeric labels
+
+```
+Adult plays have a maximum audience.
+
+```{r}
+
+play.type <- aggregate(NUMBER_OF_AUDIENCE~PLAY_TYPE,sehir.tiyatrolari,sum)
+
+ggplot(play.type, aes(x="", y=NUMBER_OF_AUDIENCE, fill=PLAY_TYPE)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  
+  theme_void() # remove background, grid, numeric labels
+
+
+```
+<h1> Confidence Intervals </h1>
+
+
+a) Finding confidence interval for number of audience  evaluating the differences based on play type. 
+
+```{r}
+localPlay <- subset(sehir.tiyatrolari, PLAY_TYPE=="Yerli")
+foreginPlay <- subset(sehir.tiyatrolari, PLAY_TYPE=="Yabancı")
+```
+
+
+```{r}
+# Calculating confidence interval for number of audience of local plays
+localConf <- t.test(localPlay$NUMBER_OF_AUDIENCE)$conf.int
+localConf
+```
+
+The above output indicates that the true average of nnumber of audiences for  local play is between 60.01 and 64.69 with 95% confident.
+
+```{r}
+ foreignConf <- t.test(foreginPlay$NUMBER_OF_AUDIENCE)$conf.int
+ foreignConf
+```
+
+The above output indicates that the true average of number of audiennce for foreign plays' is between 68.04 and 74.88 with 95% confident.
+
+
+```{r}
+local.play.audience <- data.frame( PLAY_TYPE="Yerli",
+                                mean=mean(localPlay$NUMBER_OF_AUDIENCE), 
+                                lower=localPlay[1], 
+                                upper=localPlay[2])
+
+play.audience<- rbind(local.play.audience, data.frame(PLAY_TYPE="Yabancı",
+                                mean=mean(foreginPlay$NUMBER_OF_AUDIENCE), 
+                                lower=foreginPlay[1], 
+                                upper=foreginPlay[2]))
+
+
+ggplot(play.audience, aes("NUMBER_OF_AUDIENCE", mean)) + geom_point()
+
+```
+
+
+
+
+b) Find confidence interval for number of audience evaluating the differences based on play date.
+
+
+```{r}
+year2017 <- subset(sehir.tiyatrolari, PLAY_DATE==2017)
+year2020 <- subset(sehir.tiyatrolari, PLAY_DATE==2020)
+
+```
+
+
+```{r}
+conf2017 <- t.test(year2017$NUMBER_OF_AUDIENCE)$conf.int
+conf2017
+```
+The above output indicates that the true average of number of audince for 2017 year is between 78.38 and 89.53 with 95% confident.
+
+```{r}
+year2020 <- t.test(year2020$NUMBER_OF_AUDIENCE)$conf.int
+year2020
+```
+The above output indicates that the true average of number of audince for 2020 year is between 730.13 and 89.53 with 95% confident.
+
+c) Find confidence interval for number of audience evaluating the differences based on theatre Use ggplot2 to plot the corresponding confidence interval to support your evaluations.
+
+```{r}
+kadikoyTheatre <-  subset(sehir.tiyatrolari, THEATER_NAME=="Kadıköy Haldun Taner Sahnesi")
+umraniyeTheatre<- subset(sehir.tiyatrolari, THEATER_NAME=="Ümraniye Sahnesi")
+
+```
+
+
+
+```{r}
+confKadikoy <- t.test(kadikoyTheatre$NUMBER_OF_AUDIENCE)$conf.int
+confKadikoy
+```
+
+The above output indicates that the true average of number of audince for "Kadıköy Haldun Taner Sahnesi"  is between 69.33 and 88. with 95% confident.
+
+
+```{r}
+confUmraniye <- t.test(umraniyeTheatre$NUMBER_OF_AUDIENCE)$conf.int
+confUmraniye
+```
+
+The above output indicates that the true average of number of audince for "Ümraniye Sahnesi"  is between 66.69 and 78.23 with 95% confident.
+
+```{r}
+head(sehir.tiyatrolari)
+```
+
+
+
+<h1>HYPHOTESIS TESTING <h1>
+
+<h2> Let's test that the true averae audience of local play mean is  900. <h2>
+
+H0: mu = 900   
+Ha: mu != 900
+
+
+
+```{r}
+t.test(localPlay$NUMBER_OF_AUDIENCE, 
+       alternative = "two.sided", 
+       mu=900, 
+       conf.level = 0.95)
+```
+<p>To conclude, as p-value < 0.05, the null hypothesis is  rejected and the confidence interval is not  between 60.01 and 64.69 with 95% confident. </p>
+
+
+
+
+<h2> Are	there	significant	difference	between	mean	of Turkish	and	foreigner play category based on audience number? <h2>
+
+
+
+```{r}
+yerli <- subset(sehir.tiyatrolari, PLAY_TYPE=="Yerli")$NUMBER_OF_AUDIENCE
+yabanci <- subset(sehir.tiyatrolari, PLAY_TYPE=="Yabancı")$NUMBER_OF_AUDIENCE
+var.test(yerli, yabanci)
+```
+<p>As p-value < 0.05, the null hypothesis is  rejected and the variances are not equal.  
+
+As the sample size is not large enough, we will assess the normality. </p>
+
+
+```{r}
+yerliOyun <- subset(sehir.tiyatrolari,PLAY_TYPE=="Yerli")$NUMBER_OF_AUDIENCE
+x <- t.test(yerliOyun)$conf.int
+x
+
+```
+<p>The above output indicates that the true average of score for local play is number of audience mean between 60 and 64 with 95% confident. <p>
+
+
+```{r}
+yabanciOyun  <- subset(sehir.tiyatrolari,PLAY_TYPE=="Yabancı")$NUMBER_OF_AUDIENCE
+y <- t.test(yabanciOyun)$conf.int
+y
+```
+<p>The above output indicates that the true average of score for foreign play is number of audience mean between 68 and 74 with 95% confident. </p>
+
+
+
+
+<h2> Test that the true average nnumber of audience of Musical play mean is  150. </h2>
+H0: mu = 150   
+Ha: mu != 150
+
+
+```{r}
+
+
+musical.play <- subset(sehir.tiyatrolari,PLAY_CATEGORY=="Müzikal")
+
+
+```
+
+
+```{r}
+shapiro.test(musical.play$NUMBER_OF_AUDIENCE)
+
+```
+
+As the p-value < 0.05, so data is not normally distributed. But we assumed that the data is normally distributed.
+
+```{r}
+qqnorm(musical.play$NUMBER_OF_AUDIENCE, ylab = "Males score")
+qqline(musical.play$NUMBER_OF_AUDIENCE)
+
+```
+
+
+```{r}
+t.test(musical.play$NUMBER_OF_AUDIENCE, 
+       alternative = "two.sided", 
+       mu=150, 
+       conf.level = 0.95)
+```
+To conclude, as p-value < 0.05, the null hypothesis is rejected. 
+
+<h1>ANOVA </h1>
+<h2> Are	there	significant	differences	between	mean of different categories of audiences? <h2>
+```{r}
+head(sehir.tiyatrolari)
+```
+
+```{r}
+data <- sehir.tiyatrolari[, c(5, 10)]
+names(data) <- c("category", "numberOfAudience")
+data$category <- factor(data$category)
+head(data)
+```
+
+
+```{r}
+levels(data$category)
+
+```
+
+
+```{r}
+group_by(data, category) %>%
+  summarise(
+    count = n(),
+    mean = mean(numberOfAudience, na.rm = TRUE),
+    sd = sd(numberOfAudience, na.rm = TRUE)
+  )
+```
+The Hypothesis is as following:   
+H0: mu1=mu2=mu3
+Ha: At least one of them is different   
+
+
+```{r}
+ggplot(data, aes(x = category, y = numberOfAudience, fill = category)) +
+    geom_boxplot() +
+    geom_jitter(shape = 15,
+        color = "red",
+        position = position_jitter(0.21)) +
+    theme_classic()
+```
+
+
+```{r}
+anova_one_way <- aov(numberOfAudience~category, data = data)
+summary(anova_one_way)
+```
+The p-value is less than the usual threshold of 0.05. We can to say there is statistical difference between the categories.
+
+<h1> DISCUSSION: </h1>
+
+<li>According to the data set, it is seen that the number of viewers has decreased considerably in 2020. </li>
+
+<li> Istanbul city theaters had the highest audience in 2019. </li>
+
+<li>Among the games exhibited, the most interesting adult category was shown. </li>
+
+<li>In Istanbul city theaters, the audience showed the most interest in the local play type. </li>
+
+<li>Sample size is very small, increasing the sample size can improve this study.</li>
+
+<li>I think there are no biases exist in this dataset.</li>
+

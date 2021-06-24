@@ -1,0 +1,437 @@
+---
+title: "izmir-sosyalYardimBasvurulari"
+output: html_document
+---
+
+<h1>Description of Data </h1>
+The dataset contains the Social Assistance application information made to the Izmir metropolitan municipality.
+
+
+<html>
+<head>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
+</head>
+<body>
+
+<h2>Dataset Information</h2>
+
+<table>
+   <tr>
+    <th>Column</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <th>YIL</th>
+    <th>Application year information</th>
+  </tr>
+  <tr>
+    <td>YARDIM_TALEBI</td>
+    <td>Assistance type information.</td>
+
+  </tr>
+  <tr>
+    <td>BASVURU_SEKLI</td>
+    <td> Application form information.</td>
+  </tr>
+  
+  <tr>
+    <td>BASVURU_TIPI</td>
+    <td>application type information.</td>
+  </tr>
+  <tr>
+    <td>CINSIYET</td>
+    <td> Gender information.</td>
+  </tr>
+  <tr>
+    <td>BASVURU_ADEDI</td>
+    <td>Total number of applications</td>
+  </tr>
+
+</table>
+
+<b>Licence: Izmir Metropolitan Municipality License</b>
+<br>
+<hr>
+
+```{r}
+library(ggplot2)
+library(dplyr) 
+```
+
+
+
+
+```{r}
+izmir.sosyal.yardim <- read.csv("izmirSosyalYardimBasvurulari.csv")
+head(izmir.sosyal.yardim)
+
+```
+
+The first 6 rows from the dataframe.
+
+```{r}
+izmir.sosyal.yardim <- subset(izmir.sosyal.yardim, CINSIYET !="BELİRSİZ")
+
+head(izmir.sosyal.yardim)
+
+```
+Removing the unknown data from the gender column.
+```{r}
+chisq.test(izmir.sosyal.yardim$CINSIYET,izmir.sosyal.yardim$YARDIM_TALEBI)
+```
+Since p value is greater than 0.05, It can be said that gender and aid request are independent variables.
+
+```{r}
+ggplot(izmir.sosyal.yardim) + geom_bar(aes(x = CINSIYET))
+
+```
+Number of applications for assistance by gender. It looks men have more application.
+
+```{r}
+
+counts <- table(izmir.sosyal.yardim$BASVURU_TIPI)
+barplot(counts, main=" DISTRIBUTION OF ASSISTANCE ", xlab="application type")
+```
+
+
+```{r}
+summary(izmir.sosyal.yardim$BASVURU_ADEDI)
+```
+
+
+```{r}
+dataB <- izmir.sosyal.yardim[, c("BASVURU_TIPI")]
+tail(dataB)
+
+```
+
+```{r}
+
+totalB <- aggregate(BASVURU_ADEDI~BASVURU_TIPI,izmir.sosyal.yardim,sum)
+head(totalB)
+```
+Total number of applications by application type.
+
+```{r}
+
+ggplot(totalB, aes(x="", y=BASVURU_ADEDI, fill=BASVURU_TIPI)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  
+  theme_void() 
+```
+Displaying the total number of applications according to the application type on the pie chart. Citizen according to chart has more application and then old people has second more application.
+
+
+```{r}
+total.type.assistance <- aggregate(BASVURU_ADEDI~YARDIM_TALEBI,izmir.sosyal.yardim,sum)
+head(total.type.assistance)
+
+```
+Types of the assistances.
+
+```{r}
+# Basic piechart
+ggplot(total.type.assistance, aes(x="", y=BASVURU_ADEDI, fill=YARDIM_TALEBI)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  
+  theme_void() # remove background, grid, numeric labels
+```
+According to the pie chart above, most applications were made for milk aid in Izmir, followed by food aid.
+
+```{r}
+data2 <- total.type.assistance[total.type.assistance$BASVURU_ADEDI %in% tail(sort(total.type.assistance$BASVURU_ADEDI),5),]
+pie(data2$BASVURU_ADEDI, data2$YARDIM_TALEBI)
+```
+In this pie char we can see clearly  the 5 top assistance type.
+
+```{r}
+
+milk_assistance<- izmir.sosyal.yardim%>%filter(YARDIM_TALEBI=="SÜT")
+head(milk_assistance)
+
+
+```
+
+
+```{r}
+total.type.assistance <- aggregate(BASVURU_ADEDI~CINSIYET,milk_assistance,sum)
+total.type.assistance
+
+
+```
+According to the table, most people applying for milk aid are female.
+
+```{r}
+# Basic piechart
+ggplot(total.type.assistance, aes(x="", y=BASVURU_ADEDI, fill=CINSIYET)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  
+  theme_void() # remove background, grid, numeric labels
+```
+
+Women are the ones who demand more milk aid.
+
+
+
+
+
+<h1> Confidence Intervals </h1>
+
+<h2> 1)confidence interval for students number of applications based on gender. </h2>
+
+```{r}
+males <- subset(izmir.sosyal.yardim, CINSIYET=="ERKEK")
+females <- subset(izmir.sosyal.yardim, CINSIYET=="KADIN")
+
+
+```
+<h4>Calculating confidence interval for number of applications of male   </h4>
+
+```{r}
+
+malesConf <- t.test(males$BASVURU_ADEDI)$conf.int
+malesConf
+```
+The above output indicates that the true average of number of applications for males  is between 64.74 and 112.21 with 95% confident.
+
+
+<h4> Calculating confidence interval for number of applications of female <h4>
+```{r}
+femalesConf <- t.test(females$BASVURU_ADEDI)$conf.int
+femalesConf
+```
+The above output indicates that the true average of score for females  is between 137.46 and 224.88 with 95% confident.
+
+
+
+
+
+<h2>2) Find confidence interval for number of applications evaluating the differences based on type of applications.  </h2>
+
+```{r}
+depremzede <- subset(izmir.sosyal.yardim, BASVURU_TIPI=="DEPREMZEDE")
+yaslilar <- subset(izmir.sosyal.yardim,BASVURU_TIPI=="YAŞLILAR")
+
+```
+
+
+
+```{r}
+Confdepremzede<- t.test(depremzede$BASVURU_ADEDI)$conf.int
+Confdepremzede
+```
+
+The above output indicates that the true average of number of applications for earthquake victims  is between 10.64 and 31.66 with 95% confident.
+
+```{r}
+Conf.yaslilar <- t.test(yaslilar$BASVURU_ADEDI)$conf.int
+Conf.yaslilar
+```
+The above output indicates that the true average of number of applications for old people is between 38.84 and 100.30 with 95% confident.
+
+
+
+<h2> 3) Find confidence interval for number of applications evaluating the differences based on request for aid. </h2>
+
+```{r}
+food <- subset(izmir.sosyal.yardim, YARDIM_TALEBI=="GIDA")
+cash.aid <- subset(izmir.sosyal.yardim, YARDIM_TALEBI=="NAKDİ YARDIM")
+
+```
+
+
+
+```{r}
+conf.food  <- t.test(food$BASVURU_ADEDI)$conf.int
+conf.food
+```
+The above output indicates that the true average of number of applications for those applying for food aid is between 183.20 and 391.48 with 95% confident.
+
+```{r}
+conf.cash.aid  <- t.test(cash.aid$BASVURU_ADEDI)$conf.int
+conf.cash.aid
+```
+The above output indicates that the true average of number of applications for those applying for cash aid is between 50.16 and 197.11 with 95% confident.
+
+
+
+
+<h1> Hyphotesis Testing </h1>
+
+
+
+ASSUMPTION 1: SAMPLES ARE INDEPENDENT.
+ASSUMPTION 2: SAMPLES ARE DRWAN FROM POPULATION WITH EQUAL VARIANCES.
+ASSUMPTION 2: SAMPLES ARE DRAWN FROM POPULATIN WITH A NORMAL DISTRIBUTIONS.
+
+<h2>Are	there	significant	difference	between	mean	of male and female people number of applications? <h2>
+
+
+```{r}
+females<- subset(izmir.sosyal.yardim,CINSIYET== "KADIN")
+males <- subset(izmir.sosyal.yardim,CINSIYET== "ERKEK")
+
+
+```
+
+
+check normal distrubiton
+
+```{r}
+shapiro.test(males$BASVURU_ADEDI)
+```
+As the p-value < 0.05, the null hypothesis is  rejected, so actually data is not  normally distributed.
+
+```{r}
+shapiro.test(females$BASVURU_ADEDI)
+```
+As the p-value < 0.05, the null hypothesis is  rejected, so actually data is not  normally distributed. But we assumed that data is normally distributed.
+
+
+```{r}
+t.test(izmir.sosyal.yardim$BASVURU_ADEDI ~ izmir.sosyal.yardim$CINSIYET)
+
+```
+p values is less than 0.05 so we reject to null hyphotehesis.It means there is significant difference between mean of females and males' number of applications.
+
+------
+<hr>
+<h2>the true average of the number of aids received by celiac patients is 180. </h2>
+
+hypothesis is formulated as following:   
+H0: mu = 180
+Ha: mu != 180
+
+
+
+
+```{r}
+colyak.patient <- subset(izmir.sosyal.yardim, BASVURU_TIPI=="ÇÖLYAK HASTASI")
+head(colyak.patient)
+
+```
+
+
+```{r}
+shapiro.test(colyak.patient$BASVURU_ADEDI)
+```
+As the p-value < 0.05, data is  not normally  distributed.
+
+```{r}
+t.test(colyak.patient$BASVURU_ADEDI, 
+       alternative = "two.sided", 
+       mu=180, 
+       conf.level = 0.95)
+```
+To conclude, as p-value < 0.05, the null hypothesis is rejected.
+
+
+<h2> Are	there	significant	difference	between	mean	of   male and female celiac patients  number of applications? <h2>
+
+
+
+```{r}
+qplot(x = CINSIYET, y = BASVURU_ADEDI,
+      geom = "boxplot", data = colyak.patient,
+      xlab = "Gender",
+      ylab = "Score",
+      fill = I("lightblue"))
+```
+
+```{r}
+
+x <- aggregate(BASVURU_ADEDI ~ CINSIYET, 
+          data = colyak.patient,
+          FUN = function(x) {c(mean = mean(x),
+                               se = sd(x) / sqrt(length(x)))})
+x
+```
+```{r}
+x <- subset(colyak.patient, CINSIYET=="ERKEK")$BASVURU_ADEDI
+y <- subset(colyak.patient, CINSIYET=="KADIN")$BASVURU_ADEDI
+var.test(x, y)
+```
+p values is less than 0.05 so, the null hypothesis rejected variances are different.
+
+As the sample size is not large enough, we will assess the normality.
+```{r}
+shapiro.test(x)
+
+```
+
+```{r}
+t.test(x=x, y=y, alternative = "two.sided", var.equal = TRUE,
+       conf.level = 0.95)
+```
+p value is less than 0.05, the null hyphothesis rejected. The result is said to be statistically significant.
+
+```{r}
+head(izmir.sosyal.yardim)
+```
+<h1> Annova </h1>
+
+Q1: Are	there	significant	differences	between	mean of different gender application?
+```{r}
+data <- izmir.sosyal.yardim[, c(6, 7)]
+names(data) <- c("gender", "numberOfApplication")
+data$gender <- factor(data$gender)
+```
+
+```{r}
+levels(data$gender)
+
+```
+The Hypothesis:   
+H0: mu1=mu2
+Ha: At least one of them is different  
+ 
+```{r}
+model<-aov(numberOfApplication~gender, data=data)
+summary(model)
+
+```
+ 
+
+The p-value < 0.05, we can conclude that there is  significant differences between the gender applications.   
+
+
+<h1> DISCUSSION: </h1>
+
+<li> Men applied for more assistance. 
+
+<li> Citizens, the disabled  people and the elderly people are the groups that apply the most for help. </li>
+
+<li> Most applications were made for milk aid in Izmir, followed by food aid and cash aid. </li>
+
+<li> Women citizens are the ones who demand milk aid the most. </li>
+
+<li>I think there are no biases exist in this dataset.</li>
+
+<li>Sample size is very small, increasing the sample size can improve this study. </li>
+
+
+
+
+
+
+
+
